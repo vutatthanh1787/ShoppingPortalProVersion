@@ -93,22 +93,68 @@
 		}
 
 
-		public function insert($table, $fields = array()){
+        /**
+         * @param $table
+         * @param array $fields
+         * @return $this
+         */
+        public function insert($table, $fields = array()){
             $column = implode(",", array_keys($fields));
             //print_r($column);
             $valuesArrays = array();
             $i = 0;
             foreach($fields as $key=>$value){
-                if( is_int($value) ){
+                if( is_int($value) )
                     $valuesArrays[$i] = $this->escape($value);
-                }else{
+                else
                     $valuesArrays[$i] = "'" . $this->escape($value) . "'";
-                }
                 $i++;
             }
             $values = implode(", ", $valuesArrays);
             $sql = "INSERT INTO $table($column) VALUES($values)";
-            return $this->run_query($sql, '<script>alert("Insert Have Error!")</script>');
+            if ($this->run_query($sql))
+                $this->_error = false;
+            else
+                $this->_error = true;
+            return $this;
+        }
+
+        /**
+         * @param $table
+         * @param $id
+         * @param array $fields
+         * @return $this
+         */
+        public function update($table, $id, $fields = array()){
+            $valuesArrays = array();
+            $i = 0;
+            foreach ($fields as $key=>$value) {
+                if (is_int($value))
+                    $valuesArrays[$i] = $key . "=" . $this->escape($value);
+                else
+                    $valuesArrays[$i] = $key . "=" . "'" . $this->escape($value) . "'";
+                $i++;
+            }
+            $values = implode(",", $valuesArrays);
+            $sql = "UPDATE users SET $values WHERE id = $id";
+            if ($this->run_query($sql))
+                $this->_error = false;
+            else
+                $this->_error = true;
+            return $this;
+        }
+
+        public function delete($table, $id = null){
+            if (is_int($id) && $id != null){
+                $sql = "DELETE FROM $table WHERE id = $id";
+                if ($this->run_query($sql))
+                    $this->_error = false;
+                else
+                    $this->_error = true;
+            }else{
+                throw  new Exception('Id Not Integer!');
+            }
+            return $this;
         }
 
         /**
@@ -116,11 +162,11 @@
          * @param $msg
          * @return bool
          */
-        public function run_query($sql, $msg){
+        public function run_query($sql){
 			if ( $this->_mysqli->query($sql) ) {
 				return true;
 			}else{
-				echo $msg;
+				return false;
 			}
 		}
 

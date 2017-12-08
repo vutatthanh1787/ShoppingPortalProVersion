@@ -7,10 +7,10 @@
 		// Khai bao bien
 		private static $Instance = null;
 		private $_mysqli,
-				$dbHost = 'localhost',
-				$dbUser = 'root',
-				$dbPass = 'root' ,
-				$dbName = 'shopping',
+				$_dbHost = 'localhost',
+				$_dbUser = 'root',
+				$_dbPass = 'root' ,
+				$_dbName = 'shopping',
 				$_error = false,
 				$_results,
 				$_count;
@@ -19,7 +19,7 @@
          * Database constructor.
          */
         public function __construct(){
-			$this->_mysqli = new mysqli ( $this->dbHost, $this->dbUser, $this->dbPass, $this->dbName );
+			$this->_mysqli = new mysqli ( $this->_dbHost, $this->_dbUser, $this->_dbPass, $this->_dbName );
 			if( mysqli_connect_error() ){
                 printf("Connect failed: %s\n", mysqli_connect_error());
                 exit();
@@ -36,7 +36,13 @@
 			return self::$Instance;
 		}
 
-		public function get_info($table , $column = '' ,$value = ''){
+        /**
+         * @param $table
+         * @param string $column
+         * @param string $value
+         * @return $this
+         */
+        public function get_info($table , $column = '' , $value = ''){
 			// Neu gia tri nhap vao khong phai la so nguyen
             $this->_error = false;
 			if (!is_int($value)) {
@@ -44,15 +50,16 @@
 				// kiem tra cot nhap vao co null hay k
 				if ($column != '') {
 					$sql = "SELECT * FROM $table WHERE $column=$value";
-					var_dump($this->_mysqli->query($sql));
+//					var_dump($this->_mysqli->query($sql));
 					if ($query = $this->_mysqli->query($sql)){ // Khong thuc hien duoc query
                         $this->_count = $query->num_rows;
-                        print_r($this->_count);
-                        die('111');
-                        while ($row = $query->fetch_assoc()) {
-                            $this->_results = $row;
+//                        print_r('count = ' . $this->_count);
+//                        die();
+                        if ($this->_count > 0){
+                            while ($row = $query->fetch_assoc()) {
+                                $this->_results = $row;
+                            }
                         }
-//                        $this->_error = true;
                     }else{
 					    $this->_error = true;
                     }
@@ -60,44 +67,98 @@
 				    $sql = "SELECT * FROM $table";
 				    if ($query = $this->_mysqli->query($sql)){
                         $this->_count = $query->num_rows;
-                        while ($row = $query->fetch_assoc()) {
-                            $this->_results[] = $row;
+                        if ($this->_count > 0){
+                            while ($row = $query->fetch_assoc()) {
+                                $this->_results[] = $row;
+                            }
                         }
                     }else{
                         $this->_error = true;
                     }
                 }
-			}
+			}else{
+			    $sql = "SELECT * FROM $table WHERE $column=$value";
+                if ($query = $this->_mysqli->query($sql)){ // Khong thuc hien duoc query
+                    $this->_count = $query->num_rows;
+                    if ($this->_count > 0){
+                        while ($row = $query->fetch_assoc()) {
+                            $this->_results = $row;
+                        }
+                    }
+                }else{
+                    $this->_error = true;
+                }
+            }
             return $this;
 		}
 
-		public function run_query($sql, $msg){
-			if ( $this->mysqli->query($sql) ) {
+
+		public function insert($table, $fields = array()){
+            $column = implode(",", array_keys($fields));
+            //print_r($column);
+            $valuesArrays = array();
+            $i = 0;
+            foreach($fields as $key=>$value){
+                if( is_int($value) ){
+                    $valuesArrays[$i] = $this->escape($value);
+                }else{
+                    $valuesArrays[$i] = "'" . $this->escape($value) . "'";
+                }
+                $i++;
+            }
+            $values = implode(", ", $valuesArrays);
+            $sql = "INSERT INTO $table($column) VALUES($values)";
+            return $this->run_query($sql, '<script>alert("Insert Have Error!")</script>');
+        }
+
+        /**
+         * @param $sql
+         * @param $msg
+         * @return bool
+         */
+        public function run_query($sql, $msg){
+			if ( $this->_mysqli->query($sql) ) {
 				return true;
 			}else{
 				echo $msg;
 			}
 		}
 
-		public function results(){
+        /**
+         * @return mixed
+         */
+        public function results(){
 			return $this->_results;
 		}
 
-		public function count(){
+        /**
+         * @return mixed
+         */
+        public function count(){
 		    return $this->_count;
         }
 
-		public function first(){
+        /**
+         * @return mixed
+         */
+        public function first(){
 			return $this->_results[0];
 		}
 
-		public function error(){
+        /**
+         * @return bool
+         */
+        public function error(){
 			return $this->_error;
 		}
 
-		public function escape($name)
+        /**
+         * @param $name
+         * @return mixed
+         */
+        public function escape($name)
 		{
-			return $this->mysqli->real_escape_string($name);
+			return $this->_mysqli->real_escape_string($name);
 		}
 	}
  ?>

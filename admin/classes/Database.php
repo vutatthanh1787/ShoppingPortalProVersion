@@ -7,10 +7,6 @@
 		// Khai bao bien
 		private static $Instance = null;
 		private $_mysqli,
-				$_dbHost = 'localhost',
-				$_dbUser = 'root',
-				$_dbPass = 'root' ,
-				$_dbName = 'shopping',
 				$_error = false,
 				$_results,
 				$_count;
@@ -19,11 +15,15 @@
          * Database constructor.
          */
         public function __construct(){
-			$this->_mysqli = new mysqli ( $this->_dbHost, $this->_dbUser, $this->_dbPass, $this->_dbName );
+			$this->_mysqli = new mysqli (   Config::get('mysql_config/host'),
+                                            Config::get('mysql_config/dbUser'),
+                                            Config::get('mysql_config/dbPass'),
+                                            Config::get('mysql_config/dbName') );
 			if( mysqli_connect_error() ){
                 printf("Connect failed: %s\n", mysqli_connect_error());
                 exit();
 			}
+			mysqli_set_charset($this->_mysqli, 'utf8');
 		}
 
         /**
@@ -47,6 +47,7 @@
             $this->_error = false;
 			if (!is_int($value)) {
 				$value = "'". $value ."'";
+				echo $value;
 				// kiem tra cot nhap vao co null hay k
 				if ($column != '') {
 					$sql = "SELECT * FROM $table WHERE $column=$value";
@@ -59,6 +60,8 @@
                             while ($row = $query->fetch_assoc()) {
                                 $this->_results = $row;
                             }
+                        }else{
+                            $this->_results = null;
                         }
                     }else{
 					    $this->_error = true;
@@ -71,6 +74,8 @@
                             while ($row = $query->fetch_assoc()) {
                                 $this->_results[] = $row;
                             }
+                        }else{
+                            $this->_results = null;
                         }
                     }else{
                         $this->_error = true;
@@ -84,6 +89,8 @@
                         while ($row = $query->fetch_assoc()) {
                             $this->_results = $row;
                         }
+                    }else{
+                        $this->_results = null;
                     }
                 }else{
                     $this->_error = true;
@@ -154,6 +161,18 @@
             }else{
                 throw  new Exception('Id Not Integer!');
             }
+            return $this;
+        }
+
+        public function delete_multi_rows($id_arr = array()){
+            //var_dump($id_arr);
+            $idListString = implode(",", $id_arr);
+            //echo $idListString;
+            $sql = "DELETE FROM users WHERE id IN ($idListString)";
+            if ($this->run_query($sql))
+                $this->_error = false;
+            else
+                $this->_error = true;
             return $this;
         }
 
